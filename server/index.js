@@ -13,31 +13,26 @@ const io = socketIo(server, {
   }
 });
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// In-memory state
 const state = {
-  activeQuestions: [], // Array of active questions
-  students: new Map(), // socketId -> studentInfo
-  responses: new Map(), // questionId -> Map of studentId -> response
+  activeQuestions: [],
+  students: new Map(),
+  responses: new Map(),
   pollHistory: [],
   timer: null,
-  messages: [], // Chat messages
-  disconnectedStudents: new Map() // socketId -> disconnectTime for cleanup
+  messages: [],
+  disconnectedStudents: new Map()
 };
 
-// Socket.io event handlers
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Student joins
   socket.on('join-student', (studentData) => {
     const { name } = studentData;
     console.log(`Student ${name} (${socket.id}) attempting to join`);
     
-    // Check if name is already taken by a different socket
     const existingStudent = Array.from(state.students.values()).find(
       student => student.name === name && student.id !== socket.id
     );
@@ -48,37 +43,31 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Check if this student already exists with a different socket ID
     const existingStudentWithSameName = Array.from(state.students.values()).find(
       student => student.name === name
     );
     
     if (existingStudentWithSameName) {
-      // Update the existing student's socket ID
       console.log(`Student ${name} reconnecting, updating socket ID from ${existingStudentWithSameName.id} to ${socket.id}`);
       state.students.delete(existingStudentWithSameName.id);
       existingStudentWithSameName.id = socket.id;
       state.students.set(socket.id, existingStudentWithSameName);
       
-      // Remove from disconnected list if they were there
       state.disconnectedStudents.delete(existingStudentWithSameName.id);
       state.disconnectedStudents.delete(socket.id);
     } else {
-      // Add new student to state
       state.students.set(socket.id, {
         id: socket.id,
         name: name,
         role: 'student'
       });
       
-      // Remove from disconnected list if they were there
       state.disconnectedStudents.delete(socket.id);
     }
 
     console.log(`Student ${name} joined successfully`);
     console.log(`Total students in state: ${Array.from(state.students.values()).filter(s => s.role === 'student').length}`);
 
-    // Send current state to student
     const joinData = { 
       success: true, 
       activeQuestions: state.activeQuestions,
@@ -87,7 +76,6 @@ io.on('connection', (socket) => {
     console.log(`Student ${name} joined successfully. Active questions:`, state.activeQuestions.length);
     socket.emit('joined', joinData);
 
-    // Send real-time results for any active questions
     state.activeQuestions.forEach(question => {
       const results = calculateResults(question.id);
       const questionResponses = state.responses.get(question.id);
@@ -117,7 +105,6 @@ io.on('connection', (socket) => {
     console.log(`Student ${name} joined successfully`);
   });
 
-  // Check for active questions
   socket.on('check-active-question', () => {
     console.log(`Student ${socket.id} checking for active questions`);
     if (state.activeQuestions.length > 0) {
@@ -128,7 +115,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Teacher joins
   socket.on('join-teacher', (teacherData) => {
     const teacherName = teacherData?.name || 'Teacher';
     console.log(`Teacher ${teacherName} (${socket.id}) joining`);
@@ -150,7 +136,6 @@ io.on('connection', (socket) => {
     console.log(`Teacher ${teacherName} joined successfully`);
   });
 
-  // Teacher creates new question
   socket.on('new-question', (questionData) => {
     console.log('Teacher creating new question:', questionData);
     
@@ -167,30 +152,22 @@ io.on('connection', (socket) => {
       endTime: Date.now() + (timer * 1000)
     };
 
-    // Add to active questions
     state.activeQuestions.push(newQuestion);
-    
-    // Initialize responses for this question
     state.responses.set(newQuestion.id, new Map());
 
-    // Broadcast to all students
     console.log(`Broadcasting new question to ${io.sockets.sockets.size} connected sockets`);
     io.emit('new-question', newQuestion);
-
-    // Notify teacher of updated active questions
     io.emit('active-questions-updated', state.activeQuestions);
 
     console.log('New question created and broadcasted:', question);
   });
 
-  // Student submits answer
   socket.on('student-answer', (answerData) => {
     const { questionId, selectedOption } = answerData;
     let student = state.students.get(socket.id);
 
     console.log(`Student ${student?.name || 'Unknown'} submitting answer:`, answerData);
 
-    // If student is not in state, try to find them by socket ID
     if (!student) {
       console.log(`Student not found in state for socket ${socket.id}, adding fallback`);
       student = {
@@ -202,7 +179,6 @@ io.on('connection', (socket) => {
       console.log(`Added fallback student to state:`, student);
     }
 
-    // Find the active question
     const activeQuestion = state.activeQuestions.find(q => q.id === questionId);
     if (!activeQuestion) {
       console.log('Invalid submission - question not found');

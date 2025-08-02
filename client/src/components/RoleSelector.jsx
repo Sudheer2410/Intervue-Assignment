@@ -19,7 +19,6 @@ const RoleSelector = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-violet to-accent rounded-full mb-6">
             <span className="text-white text-sm font-medium">⚡ Intervue Poll</span>
@@ -34,9 +33,7 @@ const RoleSelector = () => {
           </p>
         </div>
 
-        {/* Role Selection Cards */}
         <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-8">
-          {/* Student Card */}
           <div 
             className={`flex-1 p-4 md:p-6 rounded-lg cursor-pointer transition-all duration-150 ${
               selectedRole === 'student' 
@@ -55,7 +52,6 @@ const RoleSelector = () => {
             </p>
           </div>
 
-          {/* Teacher Card */}
           <div 
             className={`flex-1 p-4 md:p-6 rounded-lg cursor-pointer transition-all duration-150 ${
               selectedRole === 'teacher' 
@@ -75,7 +71,6 @@ const RoleSelector = () => {
           </div>
         </div>
 
-        {/* Continue Button */}
         <div className="text-center">
           <button
             onClick={handleContinue}

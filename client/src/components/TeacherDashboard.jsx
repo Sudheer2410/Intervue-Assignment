@@ -180,7 +180,6 @@ const TeacherDashboard = () => {
   return (
     <div className="min-h-screen bg-white p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
-                {/* Header */}
         <div className="flex items-center justify-end mb-6 md:mb-8">
           <button
             onClick={() => navigate('/teacher/history')}
@@ -197,31 +196,25 @@ const TeacherDashboard = () => {
 
         {activeQuestions.length > 0 ? (
           <>
-            {/* Active Questions */}
             <div className="space-y-4 md:space-y-6">
               {activeQuestions.map((question, questionIndex) => {
                 const questionResponses = responses[question.id] || {};
                 const questionResults = calculateResults(question, questionResponses);
                 const realTimeData = realTimeResults[question.id];
-                // Calculate question number based on current index
                 const questionNumber = questionIndex + 1;
                 
                 return (
                   <div key={question.id} className="border border-purple-200 rounded-lg overflow-hidden shadow-lg">
-                    {/* Question Number - Above the card */}
                     <div className="bg-white text-black p-2 text-center">
                       <h3 className="text-base md:text-lg text-left font-semibold">Question {questionNumber}</h3>
                     </div>
                     
-                    {/* Question Header */}
                     <div className="bg-gray-700 text-white p-3 md:p-4">
                       <h2 className="text-lg md:text-xl font-semibold text-left">{question.question}</h2>
                     </div>
                
-                                         {/* Options Body */}
                      <div className="bg-white p-3 md:p-4 space-y-2 md:space-y-3">
                        {question.options.map((option, index) => {
-                         // Use real-time results if available, otherwise fall back to calculated results
                          const result = realTimeData?.results?.[index] || questionResults[index] || { count: 0, percentage: 0 };
                          const isHighestVoted = result.percentage === Math.max(...question.options.map((_, i) => {
                            const realTimeResult = realTimeData?.results?.[i];
@@ -239,13 +232,11 @@ const TeacherDashboard = () => {
                                  : 'border-gray-200'
                              }`}
                            >
-                             {/* Progress Background Fill */}
                              <div 
                                className="absolute inset-0 bg-gradient-to-r from-violet to-purple-600 transition-all duration-300 ease-out"
                                style={{ width: `${result.percentage}%` }}
                              ></div>
                              
-                             {/* Content Layer */}
                              <div className="relative flex items-center z-10">
                                <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-semibold mr-2 md:mr-4 ${
                                  isHighestVoted ? 'bg-violet text-white' : 'bg-gray-400 text-white'
@@ -264,7 +255,6 @@ const TeacherDashboard = () => {
                        })}
                      </div>
                     
-                    {/* End Poll Button */}
                     <div className="bg-white p-3 md:p-4 flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
                       <button
                         onClick={() => {
