@@ -25,44 +25,52 @@ const RoleSelector = () => {
             <span className="text-white text-sm font-medium">⚡ Intervue Poll</span>
           </div>
           
-          <h1 className="text-4xl font-bold text-text mb-4">
+          <h1 className="text-2xl md:text-4xl font-bold text-text mb-4">
             Welcome to the Live Polling System
           </h1>
           
-          <p className="text-muted text-lg">
+          <p className="text-muted text-base md:text-lg">
             Please select the role that best describes you to begin using the live polling system.
           </p>
         </div>
 
         {/* Role Selection Cards */}
-        <div className="flex gap-6 mb-8">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-8">
           {/* Student Card */}
           <div 
-            className={`flex-1 p-6 rounded-lg cursor-pointer transition-all duration-200 ${
+            className={`flex-1 p-4 md:p-6 rounded-lg cursor-pointer transition-all duration-150 ${
               selectedRole === 'student' 
-                ? 'border-2 border-gradient-to-r from-violet to-accent bg-white shadow-lg' 
-                : 'border border-gray-200 bg-white hover:border-violet/50'
+                ? 'border-2 border-violet-500 bg-violet-50 shadow-lg' 
+                : 'border border-gray-300 bg-white hover:border-violet-400 hover:bg-violet-50 hover:shadow-md'
             }`}
             onClick={() => setSelectedRole('student')}
           >
-            <h3 className="text-xl font-semibold text-text mb-3">I'm a Student</h3>
+            <h3 className={`text-lg md:text-xl font-semibold mb-3 ${
+              selectedRole === 'student' ? 'text-violet-700' : 'text-gray-800'
+            }`}>
+              I'm a Student
+            </h3>
             <p className="text-muted text-sm">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              Join polls, submit answers and view live results in real-time.
             </p>
           </div>
 
           {/* Teacher Card */}
           <div 
-            className={`flex-1 p-6 rounded-lg cursor-pointer transition-all duration-200 ${
+            className={`flex-1 p-4 md:p-6 rounded-lg cursor-pointer transition-all duration-150 ${
               selectedRole === 'teacher' 
-                ? 'border-2 border-gradient-to-r from-violet to-accent bg-white shadow-lg' 
-                : 'border border-gray-200 bg-white hover:border-violet/50'
+                ? 'border-2 border-violet-500 bg-violet-50 shadow-lg' 
+                : 'border border-gray-300 bg-white hover:border-violet-400 hover:bg-violet-50 hover:shadow-md'
             }`}
             onClick={() => setSelectedRole('teacher')}
           >
-            <h3 className="text-xl font-semibold text-text mb-3">I'm a Teacher</h3>
+            <h3 className={`text-lg md:text-xl font-semibold mb-3 ${
+              selectedRole === 'teacher' ? 'text-violet-700' : 'text-gray-800'
+            }`}>
+              I'm a Teacher
+            </h3>
             <p className="text-muted text-sm">
-              Submit answers and view live poll results in real-time.
+              Create polls, manage questions and view detailed results.
             </p>
           </div>
         </div>
@@ -71,7 +79,7 @@ const RoleSelector = () => {
         <div className="text-center">
           <button
             onClick={handleContinue}
-            className="px-8 py-4 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-lg text-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+            className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-lg text-base md:text-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105"
           >
             Continue
           </button>

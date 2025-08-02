@@ -15,7 +15,7 @@ const TeacherDashboard = () => {
   const [progress, setProgress] = useState({ answered: 0, total: 0 });
   const [endingPolls, setEndingPolls] = useState(new Set());
   const navigate = useNavigate();
-  const { socket, kickStudent, endPoll, unreadMessages } = useSocket();
+  const { socket, kickStudent, endPoll, unreadMessages, joinAsTeacher } = useSocket();
 
   // Debug: Log socket status
   useEffect(() => {
@@ -27,9 +27,9 @@ const TeacherDashboard = () => {
   useEffect(() => {
     if (socket && socket.connected) {
       console.log('TeacherDashboard: Joining as teacher');
-      socket.emit('join-teacher', { name: 'Teacher' });
+      joinAsTeacher();
     }
-  }, [socket, socket?.connected]);
+  }, [socket, socket?.connected, joinAsTeacher]);
 
   useEffect(() => {
     if (socket && socket.connected) {
@@ -178,27 +178,27 @@ const TeacherDashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-white p-6">
+    <div className="min-h-screen bg-white p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Teacher Dashboard</h1>
+                {/* Header */}
+        <div className="flex items-center justify-end mb-6 md:mb-8">
           <button
             onClick={() => navigate('/teacher/history')}
-            className="flex items-center space-x-2 px-4 py-2 bg-violet text-white rounded-lg hover:bg-purple-600 transition-colors shadow-md"
+            className="flex items-center space-x-2 px-3 md:px-4 py-2 bg-violet text-white rounded-lg hover:bg-purple-600 transition-colors shadow-md text-sm md:text-base"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
               <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 118 0 4 4 0 018 0z" clipRule="evenodd" />
             </svg>
-            <span>View Poll history</span>
+            <span className="hidden sm:inline">View Poll history</span>
+            <span className="sm:hidden">History</span>
           </button>
         </div>
 
         {activeQuestions.length > 0 ? (
           <>
             {/* Active Questions */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {activeQuestions.map((question, questionIndex) => {
                 const questionResponses = responses[question.id] || {};
                 const questionResults = calculateResults(question, questionResponses);
@@ -210,16 +210,16 @@ const TeacherDashboard = () => {
                   <div key={question.id} className="border border-purple-200 rounded-lg overflow-hidden shadow-lg">
                     {/* Question Number - Above the card */}
                     <div className="bg-white text-black p-2 text-center">
-                      <h3 className="text-lg text-left font-semibold">Question {questionNumber}</h3>
+                      <h3 className="text-base md:text-lg text-left font-semibold">Question {questionNumber}</h3>
                     </div>
                     
                     {/* Question Header */}
-                    <div className="bg-gray-700 text-white p-4">
-                      <h2 className="text-xl font-semibold text-left">{question.question}</h2>
+                    <div className="bg-gray-700 text-white p-3 md:p-4">
+                      <h2 className="text-lg md:text-xl font-semibold text-left">{question.question}</h2>
                     </div>
                
                                          {/* Options Body */}
-                     <div className="bg-white p-4 space-y-3">
+                     <div className="bg-white p-3 md:p-4 space-y-2 md:space-y-3">
                        {question.options.map((option, index) => {
                          // Use real-time results if available, otherwise fall back to calculated results
                          const result = realTimeData?.results?.[index] || questionResults[index] || { count: 0, percentage: 0 };
@@ -233,7 +233,7 @@ const TeacherDashboard = () => {
                          return (
                            <div 
                              key={index} 
-                             className={`relative p-3 rounded-lg border-2 overflow-hidden ${
+                             className={`relative p-2 md:p-3 rounded-lg border-2 overflow-hidden ${
                                isHighestVoted 
                                  ? 'border-purple-300' 
                                  : 'border-gray-200'
@@ -247,15 +247,15 @@ const TeacherDashboard = () => {
                              
                              {/* Content Layer */}
                              <div className="relative flex items-center z-10">
-                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold mr-4 ${
+                               <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-semibold mr-2 md:mr-4 ${
                                  isHighestVoted ? 'bg-violet text-white' : 'bg-gray-400 text-white'
                                }`}>
                                  {index + 1}
                                </div>
-                               <span className={`flex-1 font-medium ${
+                               <span className={`flex-1 font-medium text-sm md:text-base ${
                                  isHighestVoted ? 'text-gray-800' : 'text-gray-700'
                                }`}>{option}</span>
-                               <span className={`font-semibold min-w-[3rem] text-right ${
+                               <span className={`font-semibold min-w-[2rem] md:min-w-[3rem] text-right text-sm md:text-base ${
                                  isHighestVoted ? 'text-gray-800' : 'text-gray-600'
                                }`}>{result.percentage}%</span>
                              </div>
@@ -265,7 +265,7 @@ const TeacherDashboard = () => {
                      </div>
                     
                     {/* End Poll Button */}
-                    <div className="bg-white p-4 flex justify-between items-center">
+                    <div className="bg-white p-3 md:p-4 flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
                       <button
                         onClick={() => {
                           if (window.confirm(`Are you sure you want to end the poll for: "${question.question}"?`)) {
@@ -274,21 +274,24 @@ const TeacherDashboard = () => {
                           }
                         }}
                         disabled={endingPolls.has(question.id)}
-                        className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 md:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
                       >
                         {endingPolls.has(question.id) ? 'Ending...' : 'End Poll'}
                       </button>
                       
-                      {/* Ask a new question button - positioned at bottom right of card */}
-                      <button
-                        onClick={() => navigate('/teacher/create-poll')}
-                        className="px-6 py-3 bg-gradient-to-r from-violet to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2 shadow-lg"
-                      >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                        </svg>
-                        <span>Ask a new question</span>
-                      </button>
+                      {/* Ask a new question button - only for the last question */}
+                      {questionIndex === activeQuestions.length - 1 && (
+                        <button
+                          onClick={() => navigate('/teacher/create-poll')}
+                          className="px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-violet to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2 shadow-lg text-sm md:text-base"
+                        >
+                          <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                          </svg>
+                          <span className="hidden sm:inline">Ask a new question</span>
+                          <span className="sm:hidden">New Question</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -349,16 +352,16 @@ const TeacherDashboard = () => {
       </div>
 
       {/* Floating Chat Button */}
-      <div className="fixed bottom-6 right-6">
+      <div className="fixed bottom-4 md:bottom-6 right-4 md:right-6">
         <button 
           onClick={() => setShowChat(true)}
-          className="w-12 h-12 bg-violet rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-110 flex items-center justify-center relative"
+          className="w-10 h-10 md:w-12 md:h-12 bg-violet rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-110 flex items-center justify-center relative"
         >
-          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
           </svg>
           {unreadMessages > 0 && (
-            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 md:h-5 md:w-5 flex items-center justify-center">
               {unreadMessages > 9 ? '9+' : unreadMessages}
             </div>
           )}
