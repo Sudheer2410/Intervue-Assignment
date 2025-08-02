@@ -15,14 +15,27 @@ const StudentPollView = () => {
   const [realTimeResults, setRealTimeResults] = useState({});
   const [showResults, setShowResults] = useState(false);
   const navigate = useNavigate();
-  const { socket, submitAnswer, isConnected, connectionError, unreadMessages, setPollResults } = useSocket();
+  const { socket, submitAnswer, isConnected, connectionError, unreadMessages, setPollResults, joinAsStudent, userName, userRole } = useSocket();
+  const [students, setStudents] = useState([]);
 
   useEffect(() => {
     if (socket) {
       console.log('StudentPollView: Setting up socket listeners');
       
+      // Ensure student is properly joined
+      if (socket.connected && !userName) {
+        console.log('StudentPollView: Student not joined, redirecting to join page');
+        navigate('/student');
+        return;
+      }
+      
+      console.log('StudentPollView: Current user state:', { userName, userRole, isConnected });
+      
       socket.on('joined', (data) => {
         console.log('StudentPollView: Joined successfully:', data);
+        if (data.students) {
+          setStudents(data.students.filter(s => s.role === 'student'));
+        }
         if (data.activeQuestions && data.activeQuestions.length > 0) {
           console.log('StudentPollView: Received active questions on join:', data.activeQuestions);
           setQuestions(data.activeQuestions);
@@ -70,7 +83,10 @@ const StudentPollView = () => {
           // Check if question already exists
           const exists = prev.find(q => q.id === newQuestion.id);
           if (!exists) {
-            return [...prev, newQuestion];
+            const newQuestions = [...prev, newQuestion];
+            // Move to the new question immediately
+            setCurrentQuestionIndex(newQuestions.length - 1);
+            return newQuestions;
           }
           return prev;
         });
@@ -88,6 +104,9 @@ const StudentPollView = () => {
         }));
         setError('');
         setIsLoading(false);
+        
+        // Reset results state for new question
+        setShowResults(false);
       });
 
       socket.on('poll-results', (data) => {
@@ -115,6 +134,21 @@ const StudentPollView = () => {
         navigate('/student/kicked');
       });
 
+      socket.on('student-joined', (data) => {
+        console.log('StudentPollView: Student joined:', data);
+        setStudents(prev => {
+          const newStudents = [...prev, data.student];
+          return newStudents.filter((student, index, self) => 
+            index === self.findIndex(s => s.id === student.id)
+          );
+        });
+      });
+
+      socket.on('student-disconnected', (data) => {
+        console.log('StudentPollView: Student disconnected:', data);
+        setStudents(prev => prev.filter(s => s.id !== data.studentId));
+      });
+
       socket.on('answer-submitted', (data) => {
         console.log('StudentPollView: Answer submitted successfully');
         if (data.questionId) {
@@ -126,25 +160,8 @@ const StudentPollView = () => {
           // Show results immediately after submitting
           setShowResults(true);
           
-          // Automatically move to next question after a few seconds
-          setTimeout(() => {
-            setCurrentQuestionIndex(prev => {
-              const nextIndex = prev + 1;
-              if (nextIndex < questions.length) {
-                console.log('StudentPollView: Moving to next question:', nextIndex);
-                // Reset states for next question
-                setShowResults(false);
-                setRealTimeResults(prev => {
-                  const newResults = { ...prev };
-                  delete newResults[data.questionId];
-                  return newResults;
-                });
-              } else {
-                console.log('StudentPollView: No more questions, showing waiting message');
-              }
-              return nextIndex;
-            });
-          }, 3000); // Wait 3 seconds before moving to next question
+          // Don't automatically move to next question - let them see results
+          // and wait for next question from teacher
         } else {
           // Fallback for backward compatibility
           setHasSubmitted(prev => {
@@ -289,12 +306,6 @@ const StudentPollView = () => {
               : 'You have completed all available questions. Wait for the teacher to ask more questions.'
             }
           </p>
-          <button
-            onClick={() => navigate('/student/lobby')}
-            className="mt-4 px-6 py-3 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200"
-          >
-            Back to Lobby
-          </button>
         </div>
       </div>
     );
@@ -444,7 +455,7 @@ const StudentPollView = () => {
       </div>
 
       {/* Chat Modal */}
-      <Chat isOpen={showChat} onClose={() => setShowChat(false)} />
+      <Chat isOpen={showChat} onClose={() => setShowChat(false)} students={students} />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { useSocket } from '../contexts/SocketContext';
 
 const PollHistory = () => {
   const [pollHistory, setPollHistory] = useState([]);
+  const [deletingPolls, setDeletingPolls] = useState(new Set());
   const navigate = useNavigate();
   const { socket } = useSocket();
 
@@ -27,12 +28,32 @@ const PollHistory = () => {
         socket.emit('request-poll-history');
       }
 
+      socket.on('poll-deleted', (pollId) => {
+        console.log('PollHistory: Poll deleted:', pollId);
+        setPollHistory(prev => prev.filter(poll => poll.id !== pollId));
+        setDeletingPolls(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(pollId);
+          return newSet;
+        });
+      });
+
       return () => {
         socket.off('joined');
         socket.off('poll-history');
+        socket.off('poll-deleted');
       };
     }
   }, [socket]);
+
+  const handleDeletePoll = (pollId, pollQuestion) => {
+    console.log('Attempting to delete poll:', { pollId, pollQuestion });
+    if (window.confirm(`Are you sure you want to delete this poll?\n\n"${pollQuestion}"\n\nThis action is permanent.`)) {
+      console.log('Sending delete-poll event with ID:', pollId);
+      setDeletingPolls(prev => new Set([...prev, pollId]));
+      socket.emit('delete-poll', pollId.toString());
+    }
+  };
 
   const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleString();
@@ -60,12 +81,21 @@ const PollHistory = () => {
         ) : (
           <div className="space-y-6">
             {pollHistory.map((poll, index) => (
-              <div key={poll.id} className="bg-white rounded-lg p-6 shadow-sm">
+                <div key={poll.id} className="bg-white rounded-lg p-6 shadow-sm">
                 {/* Question Header */}
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-text mb-2">
-                    Question {poll.questionNumber || pollHistory.length - index}
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-text">
+                      Question {index + 1}
+                    </h3>
+                    <button
+                      onClick={() => handleDeletePoll(poll.id, poll.question)}
+                      disabled={deletingPolls.has(poll.id)}
+                      className="px-3 py-1 bg-violet text-white text-sm rounded hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deletingPolls.has(poll.id) ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                   <div className="bg-text text-white p-4 rounded-lg">
                     <p className="text-lg">{poll.question}</p>
                   </div>

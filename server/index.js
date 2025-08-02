@@ -129,11 +129,12 @@ io.on('connection', (socket) => {
   });
 
   // Teacher joins
-  socket.on('join-teacher', () => {
-    console.log(`Teacher (${socket.id}) joining`);
+  socket.on('join-teacher', (teacherData) => {
+    const teacherName = teacherData?.name || 'Teacher';
+    console.log(`Teacher ${teacherName} (${socket.id}) joining`);
     state.students.set(socket.id, {
       id: socket.id,
-      name: 'Teacher',
+      name: teacherName,
       role: 'teacher'
     });
 
@@ -143,10 +144,10 @@ io.on('connection', (socket) => {
       activeQuestions: state.activeQuestions,
       pollHistory: state.pollHistory
     };
-    console.log(`Teacher joined successfully. Active questions:`, state.activeQuestions.length);
+    console.log(`Teacher ${teacherName} joined successfully. Active questions:`, state.activeQuestions.length);
     socket.emit('joined', joinData);
 
-    console.log('Teacher joined successfully');
+    console.log(`Teacher ${teacherName} joined successfully`);
   });
 
   // Teacher creates new question
@@ -348,7 +349,11 @@ io.on('connection', (socket) => {
     const { message, senderName, senderRole } = messageData;
     const user = state.students.get(socket.id);
     
+    console.log('Send message attempt:', { socketId: socket.id, user, messageData });
+    console.log('Current students in state:', Array.from(state.students.entries()));
+    
     if (!user) {
+      console.log('User not found in state, sending error');
       socket.emit('error', { message: 'You must be connected to send messages.' });
       return;
     }
@@ -401,6 +406,27 @@ io.on('connection', (socket) => {
     console.log('Poll history length:', state.pollHistory.length);
     socket.emit('poll-history', state.pollHistory);
     console.log('Poll history sent to client');
+  });
+
+  // Delete poll from history
+  socket.on('delete-poll', (pollId) => {
+    console.log('Teacher deleting poll:', pollId);
+    console.log('Current poll history:', state.pollHistory.map(p => ({ id: p.id, question: p.question })));
+    
+    // Remove from poll history - convert pollId to string for comparison
+    const pollIndex = state.pollHistory.findIndex(poll => poll.id.toString() === pollId.toString());
+    console.log('Found poll at index:', pollIndex);
+    
+    if (pollIndex !== -1) {
+      const deletedPoll = state.pollHistory.splice(pollIndex, 1)[0];
+      console.log('Poll deleted from history:', deletedPoll.question);
+      
+      // Notify all clients that poll was deleted
+      io.emit('poll-deleted', pollId);
+    } else {
+      console.log('Poll not found with ID:', pollId);
+      console.log('Available poll IDs:', state.pollHistory.map(p => p.id));
+    }
   });
 
   // Handle disconnection
@@ -477,13 +503,19 @@ function endPoll(questionId) {
   // Calculate results for this question
   const results = calculateResults(questionId);
   
-  // Add to history
-  state.pollHistory.push({
-    ...question,
-    results,
-    totalResponses: state.responses.get(questionId)?.size || 0,
-    timestamp: Date.now()
-  });
+  // Add to history (check for duplicates)
+  const existingPollIndex = state.pollHistory.findIndex(poll => poll.id === question.id);
+  if (existingPollIndex === -1) {
+    state.pollHistory.push({
+      ...question,
+      results,
+      totalResponses: state.responses.get(questionId)?.size || 0,
+      timestamp: Date.now()
+    });
+    console.log('Poll added to history:', question.question);
+  } else {
+    console.log('Poll already exists in history, skipping duplicate');
+  }
 
   // Remove from active questions
   state.activeQuestions.splice(questionIndex, 1);

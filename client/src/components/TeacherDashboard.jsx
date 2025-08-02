@@ -5,6 +5,7 @@ import Chat from './Chat';
 
 const TeacherDashboard = () => {
   const [activeQuestions, setActiveQuestions] = useState([]);
+  const [pollHistory, setPollHistory] = useState([]);
   const [students, setStudents] = useState([]);
   const [responses, setResponses] = useState({});
   const [realTimeResults, setRealTimeResults] = useState({});
@@ -22,11 +23,11 @@ const TeacherDashboard = () => {
     console.log("Teacher socket connected:", socket?.connected);
   }, [socket]);
 
-  // Join as teacher when socket is connected
+  // Auto-join as teacher when component mounts
   useEffect(() => {
     if (socket && socket.connected) {
       console.log('TeacherDashboard: Joining as teacher');
-      socket.emit('join-teacher');
+      socket.emit('join-teacher', { name: 'Teacher' });
     }
   }, [socket, socket?.connected]);
 
@@ -38,6 +39,9 @@ const TeacherDashboard = () => {
         console.log('TeacherDashboard: Joined successfully:', data);
         if (data.activeQuestions) {
           setActiveQuestions(data.activeQuestions);
+        }
+        if (data.pollHistory) {
+          setPollHistory(data.pollHistory);
         }
         if (data.students) {
           setStudents(data.students.filter(s => s.role === 'student'));
@@ -96,6 +100,9 @@ const TeacherDashboard = () => {
         console.log('TeacherDashboard: Poll results:', data);
         // Remove the ended question from active questions
         setActiveQuestions(prev => prev.filter(q => q.id !== data.question.id));
+
+        // Add to poll history
+        setPollHistory(prev => [...prev, data]);
         // Clear the loading state for this question
         setEndingPolls(prev => {
           const newSet = new Set(prev);
@@ -168,19 +175,21 @@ const TeacherDashboard = () => {
     return results;
   };
 
+
+
   return (
     <div className="min-h-screen bg-white p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Question</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Teacher Dashboard</h1>
           <button
             onClick={() => navigate('/teacher/history')}
             className="flex items-center space-x-2 px-4 py-2 bg-violet text-white rounded-lg hover:bg-purple-600 transition-colors shadow-md"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 118 0 4 4 0 018 0z" clipRule="evenodd" />
             </svg>
             <span>View Poll history</span>
           </button>
@@ -194,13 +203,20 @@ const TeacherDashboard = () => {
                 const questionResponses = responses[question.id] || {};
                 const questionResults = calculateResults(question, questionResponses);
                 const realTimeData = realTimeResults[question.id];
+                // Calculate question number based on current index
+                const questionNumber = questionIndex + 1;
                 
                 return (
                   <div key={question.id} className="border border-purple-200 rounded-lg overflow-hidden shadow-lg">
+                    {/* Question Number - Above the card */}
+                    <div className="bg-white text-black p-2 text-center">
+                      <h3 className="text-lg text-left font-semibold">Question {questionNumber}</h3>
+                    </div>
+                    
                     {/* Question Header */}
-                                         <div className="bg-gray-700 text-white p-4">
-                       <h2 className="text-xl font-semibold text-center">Question {question.questionNumber || questionIndex + 1}: {question.question}</h2>
-                     </div>
+                    <div className="bg-gray-700 text-white p-4">
+                      <h2 className="text-xl font-semibold text-left">{question.question}</h2>
+                    </div>
                
                                          {/* Options Body */}
                      <div className="bg-white p-4 space-y-3">
@@ -258,7 +274,7 @@ const TeacherDashboard = () => {
                           }
                         }}
                         disabled={endingPolls.has(question.id)}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {endingPolls.has(question.id) ? 'Ending...' : 'End Poll'}
                       </button>
@@ -278,9 +294,6 @@ const TeacherDashboard = () => {
                 );
               })}
             </div>
-
-
-
 
           </>
         ) : (
@@ -353,7 +366,7 @@ const TeacherDashboard = () => {
       </div>
 
       {/* Chat Modal */}
-      <Chat isOpen={showChat} onClose={() => setShowChat(false)} />
+      <Chat isOpen={showChat} onClose={() => setShowChat(false)} students={students} />
     </div>
   );
 };
